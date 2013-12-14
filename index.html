@@ -1,91 +1,54 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
   <head>
-    <style>
-      body {
-        margin: 0px;
-        padding: 0px;
-      }
-      canvas {
-        border: 1px solid #9C9898;
-      }
-      #tango {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        padding: 10px;
-      }
-      #container {
-        background-image: url("http://www.html5canvastutorials.com/demos/assets/blue-background.jpg");
-        display: inline-block;
-        overflow: hidden;
-        height: 365px;
-        width: 580px;
-      }
-    </style>
-  </head>
-  <body onmousedown="return false;">
-    <div id="container"></div>
-    <input type="button" id="tango" value="Tango!">
-    <script src="http://d3lp1msu2r81bx.cloudfront.net/kjs/js/lib/kinetic-v4.7.4.min.js"></script>
-    <script defer="defer">
-      var colors = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
-          
-      function getRandomColor() {
-          return colors[Math.round(Math.random() * 5)];
-      }
-      
-      function tango(layer) {
-        var color = Kinetic.Util.getRGB(getRandomColor());
-                  
-        for(var n = 0; n < layer.getChildren().length; n++) {
-          var shape = layer.getChildren()[n];
-          var stage = shape.getStage();
-          var radius = Math.random() * 100 + 20;
-          
-          new Kinetic.Tween({
-            node: shape, 
-            duration: 1,
-            x: Math.random() * stage.getWidth(), 
-            y: Math.random() * stage.getHeight(), 
-            rotation: Math.random() * Math.PI * 2, 
-            radius: radius,
-            opacity: (radius - 20) / 100,
-            easing: Kinetic.Easings.EaseInOut,
-            fillR: color.r,
-            fillG: color.g,
-            fillB: color.b
-          }).play();
+  <title>HTML5 multi-touch</title>
+  <script>
+    var canvas;
+    var ctx;
+    var lastPt = new Object();
+    var colours = ['red', 'green', 'blue', 'yellow', 'black'];
+ 
+    function init() {
+      var touchzone = document.getElementById("mycanvas");
+      touchzone.addEventListener("touchmove", draw, false);
+      touchzone.addEventListener("touchend", end, false);	  
+      canvas = document.getElementById('mycanvas');
+      ctx = canvas.getContext("2d");
+    }
+ 
+    function draw(e) {
+      e.preventDefault();
+ 
+      //Iterate over all touches
+      for(var i=0;i<e.touches.length;i++) {
+        var id = e.touches[i].identifier;	  
+        if(lastPt[id]) {
+          ctx.beginPath();
+          ctx.moveTo(lastPt[id].x, lastPt[id].y);
+          ctx.lineTo(e.touches[i].pageX, e.touches[i].pageY);
+          ctx.strokeStyle = colours[id];
+          ctx.stroke();
+ 
         }
+        // Store last point
+        lastPt[i] = {x:e.touches[i].pageX, y:e.touches[i].pageY};
       }
-      var stage = new Kinetic.Stage({
-        container: 'container',
-        width: 578,
-        height: 363
-      });
-
-      var layer = new Kinetic.Layer();
-
-      for(var n = 0; n < 10; n++) {
-        var radius = Math.random() * 100 + 20;
-        var shape = new Kinetic.RegularPolygon({
-          x: Math.random() * stage.getWidth(),
-          y: Math.random() * stage.getHeight(),
-          sides: Math.ceil(Math.random() * 5 + 3),
-          radius: radius,
-          fill: getRandomColor(),
-          opacity: (radius - 20) / 100,
-          draggable: true
-        });
-
-        layer.add(shape);
-      }
-
-      stage.add(layer);
-
-      document.getElementById('tango').addEventListener('click', function() {
-        tango(layer);
-      }, false);
-    </script>
+  }
+ 
+  function end(e) {
+    e.preventDefault();
+    for(var i=0;i<e.changedTouches.length;i++) {
+      var id = e.changedTouches[i].identifier;
+      // Terminate this touch
+      delete lastPt[id];
+    }
+  }  
+ 
+  </script>
+  </head>
+  <body onload="init()">
+    <canvas id="mycanvas" width="500" height="500">
+      Canvas element not supported.
+    </canvas>
   </body>
 </html>
