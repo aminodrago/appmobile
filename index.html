@@ -1,54 +1,111 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
   <head>
-  <title>HTML5 multi-touch</title>
-  <script>
-    var canvas;
-    var ctx;
-    var lastPt = new Object();
-    var colours = ['red', 'green', 'blue', 'yellow', 'black'];
- 
-    function init() {
-      var touchzone = document.getElementById("mycanvas");
-      touchzone.addEventListener("touchmove", draw, false);
-      touchzone.addEventListener("touchend", end, false);	  
-      canvas = document.getElementById('mycanvas');
-      ctx = canvas.getContext("2d");
-    }
- 
-    function draw(e) {
-      e.preventDefault();
- 
-      //Iterate over all touches
-      for(var i=0;i<e.touches.length;i++) {
-        var id = e.touches[i].identifier;	  
-        if(lastPt[id]) {
-          ctx.beginPath();
-          ctx.moveTo(lastPt[id].x, lastPt[id].y);
-          ctx.lineTo(e.touches[i].pageX, e.touches[i].pageY);
-          ctx.strokeStyle = colours[id];
-          ctx.stroke();
- 
-        }
-        // Store last point
-        lastPt[i] = {x:e.touches[i].pageX, y:e.touches[i].pageY};
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
       }
-  }
- 
-  function end(e) {
-    e.preventDefault();
-    for(var i=0;i<e.changedTouches.length;i++) {
-      var id = e.changedTouches[i].identifier;
-      // Terminate this touch
-      delete lastPt[id];
-    }
-  }  
- 
-  </script>
+    </style>
   </head>
-  <body onload="init()">
-    <canvas id="mycanvas" width="500" height="500">
-      Canvas element not supported.
-    </canvas>
+  <body>
+    <div id="container"></div>
+    <script src="http://d3lp1msu2r81bx.cloudfront.net/kjs/js/lib/kinetic-v4.7.4.min.js"></script>
+    <script defer="defer">
+      var lastDist = 0;
+      var startScale = 1;
+      var activeShape = null;
+
+      function getDistance(p1, p2) {
+        return Math.sqrt(Math.pow((p2.x - p1.x), 2) + Math.pow((p2.y - p1.y), 2));
+      }
+      var stage = new Kinetic.Stage({
+        container: 'container',
+        width: 578,
+        height: 200,
+        x: 286,
+        y: 100,
+        offset: [289, 100]
+      });
+
+      var layer = new Kinetic.Layer();
+
+      var triangle = new Kinetic.RegularPolygon({
+        x: 190,
+        y: stage.getHeight() / 2,
+        sides: 3,
+        radius: 80,
+        fill: 'green',
+        stroke: 'black',
+        strokeWidth: 4,
+        draggable: true,
+        name: 'triangle'
+      });
+
+      var circle = new Kinetic.Circle({
+        x: 380,
+        y: stage.getHeight() / 2,
+        radius: 70,
+        fill: 'red',
+        stroke: 'black',
+        strokeWidth: 4,
+        draggable: true,
+        name: 'circle'
+      });
+
+      stage.on('tap', function(evt) {
+        // set active shape
+        var shape = evt.targetNode;
+        activeShape = activeShape && activeShape.getName() === shape.getName() ? null : shape;
+
+        // sync scene graph
+        triangle.setAttrs({
+          fill: activeShape && activeShape.getName() === triangle.getName() ? '#78E7FF' : 'green',
+          stroke: activeShape && activeShape.getName() === triangle.getName() ? 'blue' : 'black'
+        });
+
+        circle.setAttrs({
+          fill: activeShape && activeShape.getName() === circle.getName() ? '#78E7FF' : 'red',
+          stroke: activeShape && activeShape.getName() === circle.getName() ? 'blue' : 'black'
+        });
+        
+        layer.draw();
+
+      });
+
+      stage.getContent().addEventListener('touchmove', function(evt) {
+        var touch1 = evt.touches[0];
+        var touch2 = evt.touches[1];
+
+        if(touch1 && touch2 && activeShape) {
+          var dist = getDistance({
+            x: touch1.clientX,
+            y: touch1.clientY
+          }, {
+            x: touch2.clientX,
+            y: touch2.clientY
+          });
+
+          if(!lastDist) {
+            lastDist = dist;
+          }
+
+          var scale = activeShape.getScale().x * dist / lastDist;
+
+          activeShape.setScale(scale);
+          layer.draw();
+          lastDist = dist;
+        }
+      }, false);
+
+      stage.getContent().addEventListener('touchend', function() {
+        lastDist = 0;
+      }, false);
+
+      layer.add(triangle);
+      layer.add(circle);
+      stage.add(layer);
+
+    </script>
   </body>
 </html>
